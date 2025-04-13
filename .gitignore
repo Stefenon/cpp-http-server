@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+/http-server/out
+
+# Visual Studio setup
+.vs
