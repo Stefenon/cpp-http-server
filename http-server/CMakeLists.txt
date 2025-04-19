@@ -11,8 +11,25 @@ endif()
 
 project ("http-server")
 
+# Add include directory for header files
+include_directories(inc)
+
+file(GLOB_RECURSE SOURCES 
+     "main.cpp"
+     "src/*.cpp"
+     "src/*.c"
+)
+
+# Automatically find all header files
+file(GLOB_RECURSE HEADERS 
+     "main.h"
+     "inc/*.h"
+     "inc/*.hpp"
+)
+
 # Add source to this project's executable.
-add_executable (http-server "http-server.cpp" "http-server.h")
+add_executable (http-server ${SOURCES} ${HEADERS})
+
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET http-server PROPERTY CXX_STANDARD 20)
