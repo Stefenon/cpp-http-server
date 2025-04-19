@@ -1,9 +1,9 @@
 #include "server/HttpServer.h"
 
-HttpServer::HttpServer(int port_arg, int connection_queue_size_arg)
+HttpServer::HttpServer(int new_port, int new_connection_queue_size)
 {
-	connection_queue_size = connection_queue_size;
-	port = port_arg;
+	connection_queue_size = new_connection_queue_size;
+	port = new_port;
 
 	// Create IPv4 socket
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -25,9 +25,9 @@ HttpServer::HttpServer(int port_arg, int connection_queue_size_arg)
 	}
 }
 
-void HttpServer::send_response(std::string response_body, HttpStatusCode status_code) const {
+void HttpServer::send_response(std::string response_body, HttpStatusCode status_code, std::string content_type) const {
 	std::string response = "HTTP/1.1 " +  HttpStatus::get_status_line(status_code) + "\r\n";
-	response += "Content-Type: application/json\r\n";
+	response += "Content-Type: " + content_type + "\r\n";
 	response += "Content-Length: " + std::to_string(response_body.length()) + "\r\n";
 
 	response += "\r\n" + response_body;

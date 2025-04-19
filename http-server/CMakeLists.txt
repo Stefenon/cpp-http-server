@@ -12,9 +12,10 @@ endif()
 project ("http-server")
 
 # Add include directory for header files
+include_directories(libs)
 include_directories(inc)
 
-file(GLOB_RECURSE SOURCES 
+file(GLOB_RECURSE SOURCES a
      "main.cpp"
      "src/*.cpp"
      "src/*.c"

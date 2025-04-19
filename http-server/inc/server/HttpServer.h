@@ -26,10 +26,10 @@ class HttpServer {
 		int client_fd;
 		sockaddr_in client_address;
 
-		void send_response(std::string response_body, HttpStatusCode status_code) const;
+		void send_response(std::string response_body, HttpStatusCode status_code, std::string content_type = "application/json") const;
 
 	public:
-		HttpServer(int port_arg=5000, int connection_queue_size_arg=2);
+		HttpServer(int new_port=5000, int new_connection_queue_size=2);
 
 		void start();
 		void set_router(HttpRouter router);
