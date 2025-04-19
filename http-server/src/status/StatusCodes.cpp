@@ -77,7 +77,6 @@ const std::unordered_map<HttpStatusCode, std::string> status_messages = {
 std::string HttpStatus::get_message(HttpStatusCode code)
 {
     auto it = status_messages.find(code);
-    std::cout << "it value: " << it->second << std::endl;
     if (it != status_messages.end()) {
         return it->second;
     }

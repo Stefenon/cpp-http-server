@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <sstream>
 #include <fstream>
+#include <iostream>
+#include <algorithm>
 
 #include "HtmlElement.h"
 
@@ -12,7 +14,6 @@ class HtmlDocument {
 		HtmlElement body = HtmlElement("body");
 
 		HtmlDocument() = default;
-		HtmlDocument(const std::filesystem::path& html_file_path);
 
 		std::string to_string();
 };

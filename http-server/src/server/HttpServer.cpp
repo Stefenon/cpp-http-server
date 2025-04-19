@@ -1,4 +1,6 @@
 #include "server/HttpServer.h"
+#include "html/HtmlDocument.h"
+#include "json/json.hpp"
 
 HttpServer::HttpServer(int new_port, int new_connection_queue_size)
 {
@@ -35,6 +37,43 @@ void HttpServer::send_response(std::string response_body, HttpStatusCode status_
 	write(client_fd, response.c_str(), response.length());
 }
 
+static std::string get_sample_html_response() {
+	HtmlDocument doc = HtmlDocument();
+	doc.head.add_child_element(HtmlElement("title", "Title 123"));
+	doc.body.add_child_element(HtmlElement("h1", "Header 345", { {"class", "test"} }));
+
+	HtmlElement new_div = HtmlElement("div");
+	new_div.set_text("One more test");
+
+	HtmlElement header_1 = HtmlElement("h1", "Header 1 inside div", { {"class", "header_1"} });
+	HtmlElement header_2 = HtmlElement("h2", "Header 2 inside div", { {"class", "header_2"} });
+	header_2.set_tail("Text after header");
+	header_2.set_attribute("new_attr", "abc");
+
+	new_div.add_child_element(header_1);
+	new_div.add_child_element(header_2);
+	new_div.add_child_element(header_1);
+
+	doc.body.add_child_element(new_div);
+
+	return doc.to_string();
+}
+
+static std::string get_sample_json_response() {
+	nlohmann::json response;
+
+	response["numeric_field"] = 123;
+	response["text_field"] = 123;
+	nlohmann::json object_field;
+	object_field["field_a"] = 1;
+	object_field["field_b"] = "B";
+	response["object_field"] = object_field;
+	std::vector<int> array_field = { 1, 2, 3, 4 };
+	response["array_field"] = array_field;
+
+	return response.dump();
+}
+
 void HttpServer::start()
 {
 	int success = listen(server_fd, connection_queue_size);
@@ -60,8 +99,23 @@ void HttpServer::start()
 			}
 			else {
 				write(1, buffer, n);
-				std::string response_body = "{\"test\": 123}";
-				send_response(response_body, HttpStatusCode::HTTP_200_OK);
+
+				const std::string response_type = "json";
+				std::string content_type;
+				std::string body;
+
+				if (response_type == "html") {
+					content_type = "text/html";
+
+					body = get_sample_html_response();
+				}
+				else {
+					content_type = "application/json";
+
+					body = get_sample_json_response();
+				}
+
+				send_response(body, HttpStatusCode::HTTP_200_OK, content_type);
 				close(client_fd);
 			}
 		}
