@@ -130,25 +130,55 @@ std::pair<std::string, std::vector<std::pair<std::string, std::string>>> HttpSer
 
 	request = request.substr(uri_split + 1);
 
+	std::cout << "URI: " << uri_string << std::endl;
+	if (query_params.size() > 0) {
+		std::cout << "Query params: " << std::endl;
+		for (const auto& param : query_params) {
+			std::cout << param.first << " = " << param.second << std::endl;
+		}
+	}
+
 	return std::make_pair(uri_string, query_params);
 }
 
+std::unordered_map<std::string, std::string> get_headers_from_request(std::string& request) {
+	std::unordered_map<std::string, std::string> headers;
+	size_t eol_split = request.find("\r\n");
+	request = request.substr(eol_split+2);
+
+	while (request.substr(0, 2) != "\r\n") {
+		size_t header_key_value_split = request.find(": ");
+		std::string header_key = request.substr(0, header_key_value_split);
+
+		size_t next_header_split = request.find("\r\n");
+		if (next_header_split == std::string::npos) {
+			break;
+		}
+
+		std::string header_value = request.substr(header_key_value_split + 2, next_header_split - (header_key_value_split + 2));
+		headers[header_key] = header_value;
+
+		request = request.substr(next_header_split + 2);
+	};
+
+	std::cout << "Headers:" << std::endl;
+	for (const auto& it : headers) {
+		std::cout << it.first << " = " << it.second << std::endl;
+	}
+
+	return headers;
+}
 
 void HttpServer::process_request(std::string& request) {
 	HttpMethod method = get_method_from_request(request);
 	auto [uri, query_params] = get_uri_and_query_params_from_request(request);
-	std::cout << "URI: " << uri << std::endl;
-	std::cout << "Query params: " << std::endl;
-	for (const auto& param : query_params) {
-		std::cout << param.first << " = " << param.second << std::endl;
-	}
-
+	std::unordered_map<std::string, std::string> headers = get_headers_from_request(request);
 }
 
 void HttpServer::start()
 {
 	int success = listen(server_fd, connection_queue_size);
-	char buffer[256];
+	char buffer[1024];
 
 	if (success == 0) {
 		std::cout << "Socket successfully listening at port " << ntohs(server_address.sin_port) << std::endl;
@@ -171,6 +201,7 @@ void HttpServer::start()
 			else {
 				std::cout << std::endl;
 				write(1, buffer, n);
+				std::cout << std::endl;
 				std::string request_str = std::string(buffer);
 				process_request(request_str);
 
