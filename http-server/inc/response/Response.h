@@ -6,13 +6,13 @@
 
 class Response {
 	public:
-		std::string content;
 		HttpStatusCode status_code;
 		std::string content_type;
 
+		Response() = default;
 		Response(std::string new_content, HttpStatusCode new_status_code, std::string new_content_type) : content(new_content), status_code(new_status_code), content_type(new_content_type) {}
-
-	protected:
+		virtual void set_content_from_string(std::string& new_content);
 		virtual std::string content_to_string() const;
-		Response(std::string new_content, HttpStatusCode new_status_code) : content(new_content), status_code(new_status_code) {}
+		std::string content;
+	private:
 };

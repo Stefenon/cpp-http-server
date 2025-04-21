@@ -7,13 +7,13 @@
 
 using json = nlohmann::json;
 
-class JsonResponse : Response {
+class JsonResponse : public Response {
 	public:
-		const std::string content_type = "application/json";
-		json content;
 		std::unordered_map<std::string, std::string> headers;
 
-		JsonResponse(json new_content, HttpStatusCode new_status_code) : Response(new_content, new_status_code) {}
-	protected:
+		JsonResponse(json& json_content, HttpStatusCode new_status_code);
 		std::string content_to_string() const override;
+		void set_content_from_string(std::string& new_content) override;
+		json json_content;
+	protected:
 };

@@ -1,6 +1,4 @@
 #include "server/HttpServer.h"
-#include "html/HtmlDocument.h"
-#include "json/json.hpp"
 
 HttpServer::HttpServer(int new_port, int new_connection_queue_size)
 {
@@ -27,17 +25,20 @@ HttpServer::HttpServer(int new_port, int new_connection_queue_size)
 	}
 }
 
-void HttpServer::send_response(std::string response_body, HttpStatusCode status_code, std::string content_type) const {
-	std::string response = "HTTP/1.1 " +  HttpStatus::get_status_line(status_code) + "\r\n";
-	response += "Content-Type: " + content_type + "\r\n";
-	response += "Content-Length: " + std::to_string(response_body.length()) + "\r\n";
+void HttpServer::send_response(const Response& response) const
+{
+	std::string response_str = "HTTP/1.1 " + HttpStatus::get_status_line(response.status_code) + "\r\n";
+	std::string content_str = response.content_to_string();
 
-	response += "\r\n" + response_body;
+	response_str += "Content-Type: " + response.content_type + "\r\n";
+	response_str += "Content-Length: " + std::to_string(content_str.length()) + "\r\n";
 
-	write(client_fd, response.c_str(), response.length());
+	response_str += "\r\n" + content_str;
+
+	write(client_fd, response_str.c_str(), response_str.length());
 }
 
-static std::string get_sample_html_response() {
+static Response get_sample_html_response() {
 	HtmlDocument doc = HtmlDocument();
 	doc.head.add_child_element(HtmlElement("title", "Title 123"));
 	doc.body.add_child_element(HtmlElement("h1", "Header 345", { {"class", "test"} }));
@@ -56,22 +57,92 @@ static std::string get_sample_html_response() {
 
 	doc.body.add_child_element(new_div);
 
-	return doc.to_string();
+	return Response(doc.to_string(), HttpStatusCode::HTTP_202_ACCEPTED, "text/html");
 }
 
-static std::string get_sample_json_response() {
-	nlohmann::json response;
+static JsonResponse get_sample_json_response() {
+	nlohmann::json body;
 
-	response["numeric_field"] = 123;
-	response["text_field"] = 123;
+	body["numeric_field"] = 123;
+	body["text_field"] = 123;
 	nlohmann::json object_field;
 	object_field["field_a"] = 1;
 	object_field["field_b"] = "B";
-	response["object_field"] = object_field;
+	body["object_field"] = object_field;
 	std::vector<int> array_field = { 1, 2, 3, 4 };
-	response["array_field"] = array_field;
+	body["array_field"] = array_field;
 
-	return response.dump();
+	return JsonResponse(body, HttpStatusCode::HTTP_200_OK);
+}
+
+HttpMethod HttpServer::get_method_from_request(std::string& request)
+{
+	size_t split = request.find(" ");
+	std::string method_string = request.substr(0, split);
+	request = request.substr(split+1);
+
+	std::cout << "Method: " << method_string << std::endl;
+
+	if (method_string == "GET")
+		return HttpMethod::GET;
+	else if (method_string == "POST")
+		return HttpMethod::POST;
+	else if (method_string == "PUT")
+		return HttpMethod::PUT;
+	else if (method_string == "PATCH")
+		return HttpMethod::PATCH;
+	else if (method_string == "DELETE")
+		return HttpMethod::DELETE;
+	else if (method_string == "HEAD")
+		return HttpMethod::HEAD;
+	else if (method_string == "OPTIONS")
+		return HttpMethod::OPTIONS;
+	else if (method_string == "CONNECT")
+		return HttpMethod::CONNECT;
+	else if (method_string == "TRACE")
+		return HttpMethod::TRACE;
+	else
+		return HttpMethod::INVALID_METHOD;
+}
+
+std::pair<std::string, std::vector<std::pair<std::string, std::string>>> HttpServer::get_uri_and_query_params_from_request(std::string& request) {
+	size_t uri_split = request.find(" ");
+	std::string uri_string = request.substr(0, uri_split);
+	size_t query_split = uri_string.find("?");
+	std::string query_string = uri_string.substr(query_split + 1);
+	uri_string = uri_string.substr(0, query_split);
+
+	std::vector<std::pair<std::string, std::string>> query_params;
+
+	if (query_split != std::string::npos) {
+		size_t param_value_split;
+		size_t next_param_split;
+
+		do {
+			param_value_split = query_string.find("=");
+			std::string param_key = query_string.substr(0, param_value_split);
+			next_param_split = query_string.find("&");
+			std::string param_value = query_string.substr(param_value_split + 1, next_param_split-(param_value_split+1));
+			query_params.emplace_back(std::make_pair(param_key, param_value));
+			query_string = query_string.substr(next_param_split + 1);
+		} while (next_param_split != std::string::npos);
+	}
+
+	request = request.substr(uri_split + 1);
+
+	return std::make_pair(uri_string, query_params);
+}
+
+
+void HttpServer::process_request(std::string& request) {
+	HttpMethod method = get_method_from_request(request);
+	auto [uri, query_params] = get_uri_and_query_params_from_request(request);
+	std::cout << "URI: " << uri << std::endl;
+	std::cout << "Query params: " << std::endl;
+	for (const auto& param : query_params) {
+		std::cout << param.first << " = " << param.second << std::endl;
+	}
+
 }
 
 void HttpServer::start()
@@ -98,24 +169,21 @@ void HttpServer::start()
 				throw std::runtime_error("Error reading message into buffer: " + std::string(strerror(errno)));
 			}
 			else {
+				std::cout << std::endl;
 				write(1, buffer, n);
+				std::string request_str = std::string(buffer);
+				process_request(request_str);
 
-				const std::string response_type = "json";
+				const std::string response_type = "html";
 				std::string content_type;
-				std::string body;
 
 				if (response_type == "html") {
-					content_type = "text/html";
-
-					body = get_sample_html_response();
+					send_response(get_sample_html_response());
 				}
 				else {
-					content_type = "application/json";
-
-					body = get_sample_json_response();
+					send_response(get_sample_json_response());
 				}
 
-				send_response(body, HttpStatusCode::HTTP_200_OK, content_type);
 				close(client_fd);
 			}
 		}

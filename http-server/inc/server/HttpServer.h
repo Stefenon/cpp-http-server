@@ -11,6 +11,23 @@
 
 #include "router/HttpRouter.h"
 #include "status/StatusCodes.h"
+#include "html/HtmlDocument.h"
+#include "response/Response.h"
+#include "response/JsonResponse.h"
+#include "json/json.hpp"
+
+enum HttpMethod {
+	GET,
+	POST,
+	PUT,
+	PATCH,
+	DELETE,
+	HEAD,
+	OPTIONS,
+	CONNECT,
+	TRACE,
+	INVALID_METHOD
+};
 
 class HttpServer {
 	private:
@@ -26,7 +43,11 @@ class HttpServer {
 		int client_fd;
 		sockaddr_in client_address;
 
-		void send_response(std::string response_body, HttpStatusCode status_code, std::string content_type = "application/json") const;
+		HttpMethod get_method_from_request(std::string& request);
+		std::pair<std::string, std::vector<std::pair<std::string, std::string>>> get_uri_and_query_params_from_request(std::string& request);
+		void process_request(std::string& request);
+
+		void send_response(const Response& response) const;
 
 	public:
 		HttpServer(int new_port=5000, int new_connection_queue_size=2);
@@ -34,3 +55,4 @@ class HttpServer {
 		void start();
 		void set_router(HttpRouter router);
 };
+
