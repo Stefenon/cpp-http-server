@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -9,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sstream>
 
 #include "router/HttpRouter.h"
 #include "status/StatusCodes.h"
@@ -30,6 +32,8 @@ enum HttpMethod {
 	INVALID_METHOD
 };
 
+constexpr int BUFFER_SIZE = 9000;
+
 class HttpServer {
 	private:
 		int connection_queue_size;
@@ -45,7 +49,6 @@ class HttpServer {
 		sockaddr_in client_address;
 
 		HttpMethod get_method_from_request(std::string& request);
-		std::pair<std::string, std::vector<std::pair<std::string, std::string>>> get_uri_and_query_params_from_request(std::string& request);
 		void process_request(std::string& request);
 
 		void send_response(const Response& response) const;

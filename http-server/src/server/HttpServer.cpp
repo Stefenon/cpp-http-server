@@ -1,4 +1,5 @@
 #include "server/HttpServer.h"
+#include "utils/StringFormatting.h"
 
 HttpServer::HttpServer(int new_port, int new_connection_queue_size)
 {
@@ -105,7 +106,7 @@ HttpMethod HttpServer::get_method_from_request(std::string& request)
 		return HttpMethod::INVALID_METHOD;
 }
 
-std::pair<std::string, std::vector<std::pair<std::string, std::string>>> HttpServer::get_uri_and_query_params_from_request(std::string& request) {
+static std::pair<std::string, std::vector<std::pair<std::string, std::string>>> get_uri_and_query_params_from_request(std::string& request) {
 	size_t uri_split = request.find(" ");
 	std::string uri_string = request.substr(0, uri_split);
 	size_t query_split = uri_string.find("?");
@@ -128,7 +129,9 @@ std::pair<std::string, std::vector<std::pair<std::string, std::string>>> HttpSer
 		} while (next_param_split != std::string::npos);
 	}
 
-	request = request.substr(uri_split + 1);
+	// Remove request line from request string
+	size_t end_of_request_line = request.find("\r\n");
+	request = request.substr(end_of_request_line + 2);
 
 	std::cout << "URI: " << uri_string << std::endl;
 	if (query_params.size() > 0) {
@@ -141,25 +144,27 @@ std::pair<std::string, std::vector<std::pair<std::string, std::string>>> HttpSer
 	return std::make_pair(uri_string, query_params);
 }
 
-std::unordered_map<std::string, std::string> get_headers_from_request(std::string& request) {
+static std::unordered_map<std::string, std::string> get_headers_from_request(std::string& request) {
 	std::unordered_map<std::string, std::string> headers;
-	size_t eol_split = request.find("\r\n");
-	request = request.substr(eol_split+2);
+	// Delimits start of request body
+	size_t double_eol_split = request.find("\r\n\r\n");
+	std::istringstream headers_stream(request.substr(0, double_eol_split));
 
-	while (request.substr(0, 2) != "\r\n") {
-		size_t header_key_value_split = request.find(": ");
-		std::string header_key = request.substr(0, header_key_value_split);
+	std::string line;
 
-		size_t next_header_split = request.find("\r\n");
-		if (next_header_split == std::string::npos) {
-			break;
-		}
+	while (std::getline(headers_stream, line)) {
+		size_t header_name_value_split = line.find(":");
 
-		std::string header_value = request.substr(header_key_value_split + 2, next_header_split - (header_key_value_split + 2));
-		headers[header_key] = header_value;
+		// Header name is case-insensitive
+		std::string header_name = StringFormatting::to_lower(line.substr(0, header_name_value_split));
 
-		request = request.substr(next_header_split + 2);
-	};
+		// Remove whitespaces and \t characters from header value
+		std::string header_value = StringFormatting::trim(line.substr(header_name_value_split + 1));
+		headers[header_name] = header_value;
+	}
+
+	// Remove headers from request
+	request = request.substr(double_eol_split+4);
 
 	std::cout << "Headers:" << std::endl;
 	for (const auto& it : headers) {
@@ -173,12 +178,15 @@ void HttpServer::process_request(std::string& request) {
 	HttpMethod method = get_method_from_request(request);
 	auto [uri, query_params] = get_uri_and_query_params_from_request(request);
 	std::unordered_map<std::string, std::string> headers = get_headers_from_request(request);
+
+	std::cout << "Remaining request:" << std::endl;
+	std::cout << request << std::endl;
 }
 
 void HttpServer::start()
 {
 	int success = listen(server_fd, connection_queue_size);
-	char buffer[1024];
+	char buffer[BUFFER_SIZE];
 
 	if (success == 0) {
 		std::cout << "Socket successfully listening at port " << ntohs(server_address.sin_port) << std::endl;
@@ -193,7 +201,7 @@ void HttpServer::start()
 		client_fd = accept(server_fd, (struct sockaddr*)&client_address, &client_address_len);
 
 		if (client_fd != -1) {
-			ssize_t n = read(client_fd, buffer, 255);
+			ssize_t n = read(client_fd, buffer, (size_t)BUFFER_SIZE - 1);
 
 			if (n < 0) {
 				throw std::runtime_error("Error reading message into buffer: " + std::string(strerror(errno)));

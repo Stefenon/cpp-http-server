@@ -15,7 +15,7 @@ project ("http-server")
 include_directories(libs)
 include_directories(inc)
 
-file(GLOB_RECURSE SOURCES a
+file(GLOB_RECURSE SOURCES
      "main.cpp"
      "src/*.cpp"
      "src/*.c"
