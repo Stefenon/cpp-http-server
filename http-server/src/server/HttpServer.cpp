@@ -84,26 +84,9 @@ HttpMethod HttpServer::get_method_from_request(std::string& request)
 
 	std::cout << "Method: " << method_string << std::endl;
 
-	if (method_string == "GET")
-		return HttpMethod::GET;
-	else if (method_string == "POST")
-		return HttpMethod::POST;
-	else if (method_string == "PUT")
-		return HttpMethod::PUT;
-	else if (method_string == "PATCH")
-		return HttpMethod::PATCH;
-	else if (method_string == "DELETE")
-		return HttpMethod::DELETE;
-	else if (method_string == "HEAD")
-		return HttpMethod::HEAD;
-	else if (method_string == "OPTIONS")
-		return HttpMethod::OPTIONS;
-	else if (method_string == "CONNECT")
-		return HttpMethod::CONNECT;
-	else if (method_string == "TRACE")
-		return HttpMethod::TRACE;
-	else
-		return HttpMethod::INVALID_METHOD;
+	HttpMethod method = Request::get_method_from_string(method_string);
+
+	return method;
 }
 
 static std::pair<std::string, std::vector<std::pair<std::string, std::string>>> get_uri_and_query_params_from_request(std::string& request) {

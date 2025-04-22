@@ -18,19 +18,7 @@
 #include "response/Response.h"
 #include "response/JsonResponse.h"
 #include "json/json.hpp"
-
-enum HttpMethod {
-	GET,
-	POST,
-	PUT,
-	PATCH,
-	DELETE,
-	HEAD,
-	OPTIONS,
-	CONNECT,
-	TRACE,
-	INVALID_METHOD
-};
+#include "request/Request.h"
 
 constexpr int BUFFER_SIZE = 9000;
 

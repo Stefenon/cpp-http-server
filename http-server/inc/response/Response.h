@@ -14,5 +14,4 @@ class Response {
 		virtual void set_content_from_string(std::string& new_content);
 		virtual std::string content_to_string() const;
 		std::string content;
-	private:
 };
