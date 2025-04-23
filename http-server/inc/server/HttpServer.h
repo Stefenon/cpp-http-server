@@ -36,9 +36,6 @@ class HttpServer {
 		int client_fd;
 		sockaddr_in client_address;
 
-		HttpMethod get_method_from_request(std::string& request);
-		void process_request(std::string& request);
-
 		void send_response(const Response& response) const;
 
 	public:

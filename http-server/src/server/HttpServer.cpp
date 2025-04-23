@@ -76,96 +76,6 @@ static JsonResponse get_sample_json_response() {
 	return JsonResponse(body, HttpStatusCode::HTTP_200_OK);
 }
 
-HttpMethod HttpServer::get_method_from_request(std::string& request)
-{
-	size_t split = request.find(" ");
-	std::string method_string = request.substr(0, split);
-	request = request.substr(split+1);
-
-	std::cout << "Method: " << method_string << std::endl;
-
-	HttpMethod method = Request::get_method_from_string(method_string);
-
-	return method;
-}
-
-static std::pair<std::string, std::vector<std::pair<std::string, std::string>>> get_uri_and_query_params_from_request(std::string& request) {
-	size_t uri_split = request.find(" ");
-	std::string uri_string = request.substr(0, uri_split);
-	size_t query_split = uri_string.find("?");
-	std::string query_string = uri_string.substr(query_split + 1);
-	uri_string = uri_string.substr(0, query_split);
-
-	std::vector<std::pair<std::string, std::string>> query_params;
-
-	if (query_split != std::string::npos) {
-		size_t param_value_split;
-		size_t next_param_split;
-
-		do {
-			param_value_split = query_string.find("=");
-			std::string param_key = query_string.substr(0, param_value_split);
-			next_param_split = query_string.find("&");
-			std::string param_value = query_string.substr(param_value_split + 1, next_param_split-(param_value_split+1));
-			query_params.emplace_back(std::make_pair(param_key, param_value));
-			query_string = query_string.substr(next_param_split + 1);
-		} while (next_param_split != std::string::npos);
-	}
-
-	// Remove request line from request string
-	size_t end_of_request_line = request.find("\r\n");
-	request = request.substr(end_of_request_line + 2);
-
-	std::cout << "URI: " << uri_string << std::endl;
-	if (query_params.size() > 0) {
-		std::cout << "Query params: " << std::endl;
-		for (const auto& param : query_params) {
-			std::cout << param.first << " = " << param.second << std::endl;
-		}
-	}
-
-	return std::make_pair(uri_string, query_params);
-}
-
-static std::unordered_map<std::string, std::string> get_headers_from_request(std::string& request) {
-	std::unordered_map<std::string, std::string> headers;
-	// Delimits start of request body
-	size_t double_eol_split = request.find("\r\n\r\n");
-	std::istringstream headers_stream(request.substr(0, double_eol_split));
-
-	std::string line;
-
-	while (std::getline(headers_stream, line)) {
-		size_t header_name_value_split = line.find(":");
-
-		// Header name is case-insensitive
-		std::string header_name = StringFormatting::to_lower(line.substr(0, header_name_value_split));
-
-		// Remove whitespaces and \t characters from header value
-		std::string header_value = StringFormatting::trim(line.substr(header_name_value_split + 1));
-		headers[header_name] = header_value;
-	}
-
-	// Remove headers from request
-	request = request.substr(double_eol_split+4);
-
-	std::cout << "Headers:" << std::endl;
-	for (const auto& it : headers) {
-		std::cout << it.first << " = " << it.second << std::endl;
-	}
-
-	return headers;
-}
-
-void HttpServer::process_request(std::string& request) {
-	HttpMethod method = get_method_from_request(request);
-	auto [uri, query_params] = get_uri_and_query_params_from_request(request);
-	std::unordered_map<std::string, std::string> headers = get_headers_from_request(request);
-
-	std::cout << "Remaining request:" << std::endl;
-	std::cout << request << std::endl;
-}
-
 void HttpServer::start()
 {
 	int success = listen(server_fd, connection_queue_size);
@@ -194,7 +104,6 @@ void HttpServer::start()
 				write(1, buffer, n);
 				std::cout << std::endl;
 				std::string request_str = std::string(buffer);
-				process_request(request_str);
 
 				const std::string response_type = "html";
 				std::string content_type;

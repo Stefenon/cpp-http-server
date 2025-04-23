@@ -3,34 +3,28 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
+#include <sstream>
 
-enum HttpMethod {
-	GET,
-	POST,
-	PUT,
-	PATCH,
-	DELETE,
-	HEAD,
-	OPTIONS,
-	CONNECT,
-	TRACE,
-	INVALID_METHOD
-};
+#include "utils/StringFormatting.h"
+#include "utils/HttpMethods.h"
 
 class Request {
 	protected:
 		std::string uri;
-		HttpMethod method;
-		std::unordered_map<std::string, std::string> single_value_query_params;
-		std::unordered_map<std::string, std::vector<std::string>> multi_value_query_params;
-		std::unordered_map<std::string, std::string> headers;
+		Http::Method method;
+		std::string body_str;
+		std::unordered_multimap<std::string, std::string> query_params;
+		std::unordered_multimap<std::string, std::string> headers;
+		void set_method_from_request_str(std::string& request);
+		void set_uri_and_query_params_from_request_str(std::string& request);
+		void set_headers_from_request_str(std::string& request);
+		void set_body_from_request_str(std::string& request);
 	public:
 		Request(std::string request_str);
 		std::string get_uri();
-		HttpMethod get_method() const;
-		static std::string get_string_from_method(HttpMethod method);
-		static HttpMethod get_method_from_string(std::string method_string);
-		std::unordered_map<std::string, std::string> get_single_value_query_params();
-		std::unordered_map<std::string, std::vector<std::string>> get_multi_value_query_params();
-		std::unordered_map<std::string, std::string> get_headers();
+		Http::Method get_method() const;
+		std::string get_body_as_str();
+		std::unordered_multimap<std::string, std::string> get_query_params();
+		std::unordered_multimap<std::string, std::string> get_headers();
 };
