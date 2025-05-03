@@ -5,23 +5,28 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <cstring>
+#include <sys/socket.h>
+#include <cstdint>
 
 #include "utils/StringFormatting.h"
 #include "utils/HttpMethods.h"
 
 class Request {
 	protected:
+		int fd;
 		std::string uri;
 		Http::Method method;
 		std::string body_str;
 		std::unordered_multimap<std::string, std::string> query_params;
 		std::unordered_multimap<std::string, std::string> headers;
-		void set_method_from_request_str(std::string& request);
-		void set_uri_and_query_params_from_request_str(std::string& request);
-		void set_headers_from_request_str(std::string& request);
-		void set_body_from_request_str(std::string& request);
+		long int get_content_length();
+		size_t set_request_line_attributes(const std::string& request_str);
+		size_t set_headers_from_request_str(const std::string& request);
+		void print_attributes();
+
 	public:
-		Request(std::string request_str);
+		Request(int client_fd, int buffer_size);
 		std::string get_uri();
 		Http::Method get_method() const;
 		std::string get_body_as_str();

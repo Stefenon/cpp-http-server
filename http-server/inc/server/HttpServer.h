@@ -20,10 +20,9 @@
 #include "json/json.hpp"
 #include "request/Request.h"
 
-constexpr int BUFFER_SIZE = 9000;
-
 class HttpServer {
 	private:
+		int buffer_size;
 		int connection_queue_size;
 		int port;
 		HttpRouter router;
@@ -39,7 +38,7 @@ class HttpServer {
 		void send_response(const Response& response) const;
 
 	public:
-		HttpServer(int new_port=5000, int new_connection_queue_size=2);
+		HttpServer(int new_port=5000, int new_connection_queue_size=2, int new_buffer_size=200);
 
 		void start();
 		void set_router(HttpRouter router);
