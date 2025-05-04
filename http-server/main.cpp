@@ -32,7 +32,7 @@ static Response get_html(Request req) {
 	return Response(doc.to_string(), HttpStatusCode::HTTP_202_ACCEPTED, "text/html");
 }
 
-static Response post_json(Request req) {
+static JsonResponse post_json(Request req) {
 	nlohmann::json body;
 	const std::string json_str = req.get_body_as_str();
 
