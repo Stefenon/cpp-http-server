@@ -2,14 +2,21 @@
 
 #include <vector>
 #include <string>
+#include <functional>
 
-typedef std::string (*EndpointFunctionPtr)(std::string body);
+#include "request/Request.h"
+#include "response/Response.h"
+#include "utils/HttpMethods.h"
+#include "exceptions/CustomExceptions.h"
 
-struct Route {
-	std::string uri;
-	EndpointFunctionPtr fnc_ptr;
+using EndpointFunction = std::function<Response(Request)>;
 
-	Route(std::string uri, EndpointFunctionPtr fnc_ptr) : uri(uri), fnc_ptr(fnc_ptr) {}
+class Route {
+	public:
+		std::string uri;
+		EndpointFunction endpoint_function;
+
+		Route(std::string new_uri, EndpointFunction new_endpoint_function) : uri(new_uri), endpoint_function(new_endpoint_function) {}
 };
 
 class HttpRouter {
@@ -20,6 +27,8 @@ class HttpRouter {
 	public:
 		HttpRouter();
 
-		void get(std::string uri, EndpointFunctionPtr fnc_ptr);
-		void post(std::string uri, EndpointFunctionPtr fnc_ptr);
+		void get(std::string uri, EndpointFunction endpoint_function);
+		void post(std::string uri, EndpointFunction endpoint_function);
+		void add_route(Http::Method method, std::string uri, EndpointFunction endpoint_function);
+		EndpointFunction get_endpoint_function(const Http::Method method, const std::string& uri) const;
 };

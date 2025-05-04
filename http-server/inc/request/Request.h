@@ -11,7 +11,7 @@
 
 #include "utils/StringFormatting.h"
 #include "utils/HttpMethods.h"
-#include "exceptions/BadRequestException.h"
+#include "exceptions/CustomExceptions.h"
 
 class Request {
 	protected:

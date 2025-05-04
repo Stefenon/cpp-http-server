@@ -46,48 +46,6 @@ void HttpServer::send_response(const Response& response) const
 	write(client_fd, response_str.c_str(), response_str.length());
 }
 
-static Response get_sample_html_response(std::unordered_multimap<std::string, std::string> tags) {
-	HtmlDocument doc = HtmlDocument();
-	doc.head.add_child_element(HtmlElement("title", "Title 123"));
-	doc.body.add_child_element(HtmlElement("h1", "Header 345", { {"class", "test"} }));
-
-	HtmlElement new_div = HtmlElement("div");
-	new_div.set_text("One more test");
-
-	for (const auto& query_param : tags) {
-		HtmlElement header_1 = HtmlElement("h1", query_param.first, {{"class", "header_1"}});
-		HtmlElement header_2 = HtmlElement("h2", query_param.second, { {"class", "header_2"} });
-		header_2.set_tail("Text after header");
-		header_2.set_attribute("new_attr", "abc");
-		new_div.add_child_element(header_1);
-		new_div.add_child_element(header_2);
-	}
-
-	doc.body.add_child_element(new_div);
-
-	return Response(doc.to_string(), HttpStatusCode::HTTP_202_ACCEPTED, "text/html");
-}
-
-static JsonResponse get_sample_json_response(const std::string& json_str="") {
-	nlohmann::json body;
-
-	if (!json_str.empty()) {
-		body = nlohmann::json::parse(json_str);
-	}
-	else {
-		body["numeric_field"] = 123;
-		body["text_field"] = 123;
-		nlohmann::json object_field;
-		object_field["field_a"] = 1;
-		object_field["field_b"] = "B";
-		body["object_field"] = object_field;
-		std::vector<int> array_field = { 1, 2, 3, 4 };
-		body["array_field"] = array_field;
-	}
-
-	return JsonResponse(body, HttpStatusCode::HTTP_200_OK);
-}
-
 void HttpServer::start()
 {
 	int success = listen(server_fd, connection_queue_size);
@@ -108,21 +66,16 @@ void HttpServer::start()
 			if (client_fd != -1) {
 				try {
 					Request request(client_fd, buffer_size);
-					std::string uri = request.get_uri();
-
-					if (uri == "/html") {
-						send_response(get_sample_html_response(request.get_query_params()));
-					}
-					else if (uri == "/json") {
-						send_response(get_sample_json_response(request.get_body_as_str()));
-					}
-					else {
-						send_response(Response(HttpStatusCode::HTTP_204_NO_CONTENT));
-					}
+					EndpointFunction endpoint_function = router.get_endpoint_function(request.get_method(), request.get_uri());
+					Response response = endpoint_function(request);
+					send_response(response);
 				}
 				catch (const BadRequestException& e) {
 					nlohmann::json request_body = { { "detail", e.what() } };
 					send_response(JsonResponse(request_body, HttpStatusCode::HTTP_400_BAD_REQUEST));
+				}
+				catch (const EndpointNotFoundException& e) {
+					send_response(Response(HttpStatusCode::HTTP_404_NOT_FOUND));
 				};
 
 				close(client_fd);

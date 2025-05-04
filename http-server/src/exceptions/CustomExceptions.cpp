@@ -1,4 +1,4 @@
-#include "exceptions/CustomException.h"
+#include "exceptions/CustomExceptions.h"
 
 const char* CustomException::what() const noexcept
 {

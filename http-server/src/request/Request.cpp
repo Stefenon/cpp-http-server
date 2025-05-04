@@ -38,10 +38,15 @@ Request::Request(int client_fd, int buffer_size)
 			}
 		}
 
-		if (headers.size() > 0 && method_accepts_body()) {
-			body_str.append(request_str);
-			request_str.clear();
-			if (body_str.size() == get_content_length()) {
+		if (headers.size() > 0) {
+			if (method_accepts_body()) {
+				body_str.append(request_str);
+				request_str.clear();
+				if (body_str.size() == get_content_length()) {
+					break;
+				}
+			}
+			else {
 				break;
 			}
 		}

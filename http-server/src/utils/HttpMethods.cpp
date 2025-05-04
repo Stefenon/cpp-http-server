@@ -21,10 +21,9 @@ std::string Http::get_string_from_method(Http::Method method) {
 		case Http::Method::TRACE:
 			return "TRACE";
 		case Http::Method::INVALID_METHOD:
+		default:
 			return "INVALID_METHOD";
 	}
-
-	return "INVALID_METHOD";
 }
 
 Http::Method Http::get_method_from_string(std::string method_string) {
