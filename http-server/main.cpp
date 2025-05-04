@@ -5,7 +5,7 @@ using namespace std;
 
 constexpr int PORT = 5000;
 constexpr int CONNECTION_QUEUE_SIZE = 2;
-constexpr int BUFFER_SIZE = 20;
+constexpr int BUFFER_SIZE = 1024;
 
 int main()
 {

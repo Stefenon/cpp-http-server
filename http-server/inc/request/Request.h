@@ -11,6 +11,7 @@
 
 #include "utils/StringFormatting.h"
 #include "utils/HttpMethods.h"
+#include "exceptions/BadRequestException.h"
 
 class Request {
 	protected:
@@ -23,13 +24,14 @@ class Request {
 		long int get_content_length();
 		size_t set_request_line_attributes(const std::string& request_str);
 		size_t set_headers_from_request_str(const std::string& request);
-		void print_attributes();
 
 	public:
 		Request(int client_fd, int buffer_size);
+		bool method_accepts_body() const;
 		std::string get_uri();
 		Http::Method get_method() const;
 		std::string get_body_as_str();
 		std::unordered_multimap<std::string, std::string> get_query_params();
 		std::unordered_multimap<std::string, std::string> get_headers();
+		void print_attributes();
 };

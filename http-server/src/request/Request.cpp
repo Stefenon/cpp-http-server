@@ -12,7 +12,7 @@ Request::Request(int client_fd, int buffer_size)
 		n = recv(client_fd, buffer, (size_t)buffer_size - 1, 0);
 		if (n <= 0) {
 			if (errno == EAGAIN) {
-				break;
+				throw BadRequestException("Malformed request message");
 			}
 			throw std::runtime_error("Error accepting message: " + std::string(strerror(errno)));
 		}
@@ -37,7 +37,8 @@ Request::Request(int client_fd, int buffer_size)
 				}
 			}
 		}
-		else if (request_str.size() > 0) {
+
+		if (headers.size() > 0 && method_accepts_body()) {
 			body_str.append(request_str);
 			request_str.clear();
 			if (body_str.size() == get_content_length()) {
@@ -47,8 +48,10 @@ Request::Request(int client_fd, int buffer_size)
 
 		memset(buffer, 0, sizeof(buffer));
 	}
+}
 
-	//print_attributes();
+bool Request::method_accepts_body() const {
+	return method == Http::Method::POST || method == Http::Method::PUT || method == Http::Method::PATCH;
 }
 
 void Request::print_attributes() {

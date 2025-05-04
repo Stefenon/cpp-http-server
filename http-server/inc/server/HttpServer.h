@@ -19,6 +19,7 @@
 #include "response/JsonResponse.h"
 #include "json/json.hpp"
 #include "request/Request.h"
+#include "exceptions/BadRequestException.h"
 
 class HttpServer {
 	private:

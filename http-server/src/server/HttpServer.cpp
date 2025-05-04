@@ -105,18 +105,25 @@ void HttpServer::start()
 		client_fd = accept(server_fd, (struct sockaddr*)&client_address, &client_address_len);
 
 		if (client_fd != -1) {
-			Request request(client_fd, buffer_size);
-			std::string uri = request.get_uri();
+			try {
+				Request request(client_fd, buffer_size);
+				std::string uri = request.get_uri();
 
-			if (uri == "/html") {
-				send_response(get_sample_html_response(request.get_query_params()));
+				if (uri == "/html") {
+					send_response(get_sample_html_response(request.get_query_params()));
+				}
+				else if (uri == "/json") {
+					send_response(get_sample_json_response(request.get_body_as_str()));
+				}
+				else {
+					send_response(Response(HttpStatusCode::HTTP_204_NO_CONTENT));
+				}
 			}
-			else if (uri == "/json") {
-				send_response(get_sample_json_response(request.get_body_as_str()));
-			}
-			else {
-				send_response(Response(HttpStatusCode::HTTP_204_NO_CONTENT));
-			}
+			catch (const BadRequestException& e) {
+				nlohmann::json request_body = { { "detail", e.what() } };
+				send_response(JsonResponse(request_body, HttpStatusCode::HTTP_400_BAD_REQUEST));
+			};
+
 
 			close(client_fd);
 		}

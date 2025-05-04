@@ -1,7 +1,7 @@
 #include <string>
 
 namespace Http {
-	enum Method {
+	enum class Method {
 		GET,
 		POST,
 		PUT,

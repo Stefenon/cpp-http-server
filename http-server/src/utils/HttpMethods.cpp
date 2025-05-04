@@ -2,27 +2,29 @@
 
 std::string Http::get_string_from_method(Http::Method method) {
 	switch (method) {
-	case Http::Method::GET:
-		return "GET";
-	case Http::Method::POST:
-		return "POST";
-	case Http::Method::PUT:
-		return "PUT";
-	case Http::Method::PATCH:
-		return "PATCH";
-	case Http::Method::DELETE:
-		return "DELETE";
-	case Http::Method::HEAD:
-		return "HEAD";
-	case Http::Method::OPTIONS:
-		return "OPTIONS";
-	case Http::Method::CONNECT:
-		return "CONNECT";
-	case Http::Method::TRACE:
-		return "TRACE";
-	case Http::Method::INVALID_METHOD:
-		return "INVALID_METHOD";
+		case Http::Method::GET:
+			return "GET";
+		case Http::Method::POST:
+			return "POST";
+		case Http::Method::PUT:
+			return "PUT";
+		case Http::Method::PATCH:
+			return "PATCH";
+		case Http::Method::DELETE:
+			return "DELETE";
+		case Http::Method::HEAD:
+			return "HEAD";
+		case Http::Method::OPTIONS:
+			return "OPTIONS";
+		case Http::Method::CONNECT:
+			return "CONNECT";
+		case Http::Method::TRACE:
+			return "TRACE";
+		case Http::Method::INVALID_METHOD:
+			return "INVALID_METHOD";
 	}
+
+	return "INVALID_METHOD";
 }
 
 Http::Method Http::get_method_from_string(std::string method_string) {
