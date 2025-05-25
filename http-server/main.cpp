@@ -75,6 +75,11 @@ static JsonResponse post_json_with_params(Request req) {
 		body["array_field"] = array_field;
 	}
 
+	std::unordered_map<std::string, std::string> path_params = req.get_path_params();
+
+	body["param_1"] = path_params["param_1"];
+	body["param_2"] = path_params["param_2"];
+
 	return JsonResponse(body, HttpStatusCode::HTTP_200_OK);
 }
 
@@ -84,7 +89,7 @@ int main()
 	HttpRouter router;
 	router.get("/html", get_html);
 	router.post("/json", post_json);
-	router.post("/json/{param_1}", post_json_with_params);
+	router.post("/json/{param_1}/{param_2}", post_json_with_params);
 
 	cout << "Create HTTP server instance" << endl;
 	HttpServer server(PORT, CONNECTION_QUEUE_SIZE, BUFFER_SIZE);

@@ -3,34 +3,34 @@
 Request::Request(int client_fd, int buffer_size)
 {
 	fd = client_fd;
-	char buffer[buffer_size];
+	std::vector<char> buffer(buffer_size);
 	std::string request_str;
+	request_str.reserve(buffer_size * 2);
 
 	ssize_t n;
 
-	while (1) {
-		n = recv(client_fd, buffer, (size_t)buffer_size - 1, 0);
+	while (true) {
+		n = recv(client_fd, buffer.data(), buffer.size() - 1, 0);
 		if (n <= 0) {
-			if (errno == EAGAIN) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
 				throw BadRequestException("Malformed request message");
 			}
 			throw std::runtime_error("Error accepting message: " + std::string(strerror(errno)));
 		}
 
-		buffer[n] = '\0';
+		request_str.append(buffer.data(), n);
 
-		request_str.append(buffer);
 		if (uri.empty()) {
 			size_t request_line_end_index = set_request_line_attributes(request_str);
 			if (request_line_end_index != std::string::npos) {
-				request_str = request_str.substr(request_line_end_index + 2);
+				request_str.erase(0, request_line_end_index + 2);
 			}
 		}
 
 		if (headers.size() == 0) {
 			size_t headers_end_index = set_headers_from_request_str(request_str);
 			if (headers_end_index != std::string::npos) {
-				request_str = request_str.substr(headers_end_index + 4);
+				request_str.erase(0, headers_end_index + 4);
 
 				if (get_content_length() == -1) {
 					break;
@@ -38,11 +38,11 @@ Request::Request(int client_fd, int buffer_size)
 			}
 		}
 
-		if (headers.size() > 0) {
+		if (!headers.empty()) {
 			if (method_accepts_body()) {
-				body_str.append(request_str);
+				body_str.append(std::move(request_str));
 				request_str.clear();
-				if (body_str.size() == get_content_length()) {
+				if (static_cast<ssize_t>(body_str.size()) == get_content_length()) {
 					break;
 				}
 			}
@@ -50,9 +50,9 @@ Request::Request(int client_fd, int buffer_size)
 				break;
 			}
 		}
-
-		memset(buffer, 0, sizeof(buffer));
 	}
+
+	print_attributes();
 }
 
 bool Request::method_accepts_body() const {

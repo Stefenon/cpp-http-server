@@ -52,18 +52,23 @@ std::pair<EndpointFunction, std::unordered_map<std::string, std::string>> HttpRo
 	for (const Route& route : routes_to_search) {
 		int sub_path_idx = 0;
 		size_t route_subpath_start = 1;
-		size_t route_subpath_end = route.uri.substr(1).find("/");
+		size_t route_subpath_end = route.uri.find("/", route_subpath_start);
 
 		size_t request_subpath_start = 1;
-		size_t request_subpath_end = uri.substr(1).find("/");
+		size_t request_subpath_end = uri.find("/", request_subpath_start);
+
+		//std::cout << uri.size() << std::endl;
+		//std::cout << route.uri.size() << std::endl;
 
 		while (true)
 		{
 			std::string_view route_subpath = route.uri.substr(route_subpath_start, route_subpath_end - route_subpath_start);
 			std::string_view request_subpath = uri.substr(request_subpath_start, request_subpath_end - request_subpath_start);
 
-			if ((route_subpath_end == std::string_view::npos && request_subpath_end != std::string_view::npos) || 
-				(route_subpath_end != std::string_view::npos && request_subpath_end == std::string_view::npos)
+			if (((route_subpath_end == std::string_view::npos || route_subpath_end == route.uri.size() - 1) &&
+				(request_subpath_end != std::string_view::npos && request_subpath_end != uri.size() - 1)) ||
+				((route_subpath_end != std::string_view::npos && route_subpath_end != route.uri.size() - 1) &&
+				(request_subpath_end == std::string_view::npos || request_subpath_end == uri.size() - 1))
 			) {
 				break;
 			}
@@ -77,7 +82,8 @@ std::pair<EndpointFunction, std::unordered_map<std::string, std::string>> HttpRo
 				break;
 			}
 
-			if (route_subpath_end == std::string_view::npos && request_subpath_end == std::string_view::npos) {
+			if ((route_subpath_end == std::string_view::npos || route_subpath_end == route.uri.size() - 1) &&
+				(request_subpath_end == std::string_view::npos || request_subpath_end == uri.size() - 1)) {
 				return { route.endpoint_function, path_params };
 			}
 
