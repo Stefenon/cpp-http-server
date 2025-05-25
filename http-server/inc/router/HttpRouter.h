@@ -13,10 +13,10 @@ using EndpointFunction = std::function<Response(Request)>;
 
 class Route {
 	public:
-		std::string uri;
+		std::string_view uri;
 		EndpointFunction endpoint_function;
 
-		Route(std::string new_uri, EndpointFunction new_endpoint_function) : uri(new_uri), endpoint_function(new_endpoint_function) {}
+		Route(std::string_view new_uri, EndpointFunction new_endpoint_function) : uri(new_uri), endpoint_function(new_endpoint_function) {}
 };
 
 class HttpRouter {
@@ -27,8 +27,8 @@ class HttpRouter {
 	public:
 		HttpRouter();
 
-		void get(std::string uri, EndpointFunction endpoint_function);
-		void post(std::string uri, EndpointFunction endpoint_function);
-		void add_route(Http::Method method, std::string uri, EndpointFunction endpoint_function);
-		EndpointFunction get_endpoint_function(const Http::Method method, const std::string& uri) const;
+		void get(const std::string_view& uri, const EndpointFunction& endpoint_function);
+		void post(const std::string_view& uri, const EndpointFunction& endpoint_function);
+		void add_route(const Http::Method& method, const std::string_view& uri, const EndpointFunction& endpoint_function);
+		std::pair<EndpointFunction, std::unordered_map<std::string, std::string>> get_endpoint_function(const Http::Method& method, const std::string_view& uri) const;
 };

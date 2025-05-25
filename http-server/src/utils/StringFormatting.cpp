@@ -1,7 +1,7 @@
 #include "utils/StringFormatting.h"
 
 namespace StringFormatting {
-	std::string to_lower(std::string string_to_convert)
+	std::string to_lower(const std::string& string_to_convert)
 	{
 		std::string converted_string = string_to_convert;
 	
@@ -21,6 +21,22 @@ namespace StringFormatting {
 		const auto str_range = str_end - str_begin + 1;
 
 		return str.substr(str_begin, str_range);
+	}
+
+	std::string find_between_characters(const std::string& str, const char start_char, const char end_char)
+	{
+		size_t start_pos = str.find(start_char);
+		if (start_pos == std::string::npos) {
+			return "";
+		}
+		start_pos += 1;
+
+		size_t end_pos = str.find(end_char, start_pos);
+		if (end_pos == std::string::npos) {
+			return "";
+		}
+
+		return str.substr(start_pos, end_pos - start_pos);
 	}
 
 }

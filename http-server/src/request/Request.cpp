@@ -59,7 +59,7 @@ bool Request::method_accepts_body() const {
 	return method == Http::Method::POST || method == Http::Method::PUT || method == Http::Method::PATCH;
 }
 
-void Request::print_attributes() {
+void Request::print_attributes() const {
 	std::cout << "Method: " << get_string_from_method(method) << std::endl;
 
 	std::cout << "URI: " << uri << std::endl;
@@ -79,7 +79,7 @@ void Request::print_attributes() {
 	std::cout << "Body: " << body_str << std::endl;
 }
 
-long int Request::get_content_length()
+long int Request::get_content_length() const
 {
 	std::unordered_map<std::string, std::string>::const_iterator got = headers.find("content-length");
 	if (got == headers.end()) {
@@ -90,7 +90,7 @@ long int Request::get_content_length()
 	}
 }
 
-std::string Request::get_uri() {
+std::string Request::get_uri() const {
 	return uri;
 }
 
@@ -160,14 +160,24 @@ size_t Request::set_headers_from_request_str(const std::string& request) {
 	return headers_end_index;
 }
 
-std::string Request::get_body_as_str() {
+std::string Request::get_body_as_str() const {
 	return body_str;
 }
 
-std::unordered_multimap<std::string, std::string> Request::get_query_params() {
+std::unordered_multimap<std::string, std::string> Request::get_query_params() const {
 	return query_params;
 }
 
-std::unordered_multimap<std::string, std::string> Request::get_headers() {
+std::unordered_map<std::string, std::string> Request::get_path_params() const
+{
+	return path_params;
+}
+
+void Request::set_path_params(const std::unordered_map<std::string, std::string>& new_path_params)
+{
+	path_params = new_path_params;
+}
+
+std::unordered_multimap<std::string, std::string> Request::get_headers() const {
 	return headers;
 }

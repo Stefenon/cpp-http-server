@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <sstream>
 
+#include "utils/StringFormatting.h"
 #include "router/HttpRouter.h"
 #include "status/StatusCodes.h"
 #include "html/HtmlDocument.h"

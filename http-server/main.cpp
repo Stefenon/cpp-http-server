@@ -33,6 +33,31 @@ static Response get_html(Request req) {
 }
 
 static JsonResponse post_json(Request req) {
+	std::cout << "inside endpoint function" << std::endl;
+	for (const auto& [k, v] : req.get_path_params()) {
+		std::cout << k << "=" << v << std::endl;
+	}
+	nlohmann::json body;
+	const std::string json_str = req.get_body_as_str();
+
+	if (!json_str.empty()) {
+		body = nlohmann::json::parse(json_str);
+	}
+	else {
+		body["numeric_field"] = 123;
+		body["text_field"] = 123;
+		nlohmann::json object_field;
+		object_field["field_a"] = 1;
+		object_field["field_b"] = "B";
+		body["object_field"] = object_field;
+		std::vector<int> array_field = { 1, 2, 3, 4 };
+		body["array_field"] = array_field;
+	}
+
+	return JsonResponse(body, HttpStatusCode::HTTP_200_OK);
+}
+
+static JsonResponse post_json_with_params(Request req) {
 	nlohmann::json body;
 	const std::string json_str = req.get_body_as_str();
 
@@ -59,6 +84,7 @@ int main()
 	HttpRouter router;
 	router.get("/html", get_html);
 	router.post("/json", post_json);
+	router.post("/json/{param_1}", post_json_with_params);
 
 	cout << "Create HTTP server instance" << endl;
 	HttpServer server(PORT, CONNECTION_QUEUE_SIZE, BUFFER_SIZE);

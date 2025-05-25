@@ -1,5 +1,4 @@
 #include "server/HttpServer.h"
-#include "utils/StringFormatting.h"
 
 HttpServer::HttpServer(int new_port, int new_connection_queue_size, int new_buffer_size)
 {
@@ -65,8 +64,22 @@ void HttpServer::start()
 
 			if (client_fd != -1) {
 				try {
+					std::cout << "Initialize request" << std::endl;
 					Request request(client_fd, buffer_size);
-					EndpointFunction endpoint_function = router.get_endpoint_function(request.get_method(), request.get_uri());
+
+					std::cout << "Get endpoint function" << std::endl;
+					Http::Method method = request.get_method();
+					std::string uri = request.get_uri();
+					const auto [endpoint_function, path_params] = router.get_endpoint_function(method, uri);
+					request.set_path_params(path_params);
+
+					if (request.get_path_params().size() > 0) {
+						std::cout << "Path parameters:" << std::endl;
+						for (const auto& [k, v] : path_params) {
+							std::cout << k << " = " << v << std::endl;
+						}
+					}
+
 					Response response = endpoint_function(request);
 					send_response(response);
 				}
