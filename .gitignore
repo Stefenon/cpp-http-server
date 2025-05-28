@@ -34,6 +34,7 @@
 
 # Visual Studio setup
 .vs
+.vscode
 
 # CMake files
 
