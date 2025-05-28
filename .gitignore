@@ -34,3 +34,10 @@
 
 # Visual Studio setup
 .vs
+
+# CMake files
+
+*/CMakeFiles
+*/CMakeCache.txt
+*/cmake_install.cmake
+*/Makefile
