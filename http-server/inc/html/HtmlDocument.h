@@ -16,5 +16,5 @@ class HtmlDocument {
 
 		HtmlDocument() = default;
 
-		std::string to_string();
+		std::string to_string() const;
 };

@@ -9,10 +9,13 @@ Request::Request(int client_fd, int buffer_size)
 
 	ssize_t n;
 
-	while (true) {
+	while (true)
+	{
 		n = recv(client_fd, buffer.data(), buffer.size() - 1, 0);
-		if (n <= 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		if (n <= 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			{
 				throw BadRequestException("Malformed request message");
 			}
 			throw std::runtime_error("Error accepting message: " + std::string(strerror(errno)));
@@ -20,59 +23,71 @@ Request::Request(int client_fd, int buffer_size)
 
 		request_str.append(buffer.data(), n);
 
-		if (uri.empty()) {
+		if (uri.empty())
+		{
 			size_t request_line_end_index = set_request_line_attributes(request_str);
-			if (request_line_end_index != std::string::npos) {
+			if (request_line_end_index != std::string::npos)
+			{
 				request_str.erase(0, request_line_end_index + 2);
 			}
 		}
 
-		if (headers.size() == 0) {
+		if (headers.size() == 0)
+		{
 			size_t headers_end_index = set_headers_from_request_str(request_str);
-			if (headers_end_index != std::string::npos) {
+			if (headers_end_index != std::string::npos)
+			{
 				request_str.erase(0, headers_end_index + 4);
 
-				if (get_content_length() == -1) {
+				if (get_content_length() == -1)
+				{
 					break;
 				}
 			}
 		}
 
-		if (!headers.empty()) {
-			if (method_accepts_body()) {
+		if (!headers.empty())
+		{
+			if (method_accepts_body())
+			{
 				body_str.append(std::move(request_str));
 				request_str.clear();
-				if (static_cast<ssize_t>(body_str.size()) == get_content_length()) {
+				if (static_cast<ssize_t>(body_str.size()) == get_content_length())
+				{
 					break;
 				}
 			}
-			else {
+			else
+			{
 				break;
 			}
 		}
 	}
-
-	print_attributes();
 }
 
-bool Request::method_accepts_body() const {
+bool Request::method_accepts_body() const
+{
 	return method == Http::Method::POST || method == Http::Method::PUT || method == Http::Method::PATCH;
 }
 
-void Request::print_attributes() const {
+void Request::print_attributes() const
+{
 	std::cout << "Method: " << get_string_from_method(method) << std::endl;
 
 	std::cout << "URI: " << uri << std::endl;
 
-	if (query_params.size() > 0) {
+	if (query_params.size() > 0)
+	{
 		std::cout << "Query params: " << std::endl;
-		for (const auto& param : query_params) {
+		for (const auto &param : query_params)
+		{
 			std::cout << param.first << " = " << param.second << std::endl;
 		}
 	}
 
 	std::cout << "Headers:" << std::endl;
-	for (const auto& header : headers) {
+	for (const auto &header : headers)
+	{
 		std::cout << header.first << " = " << header.second << std::endl;
 	}
 
@@ -82,27 +97,32 @@ void Request::print_attributes() const {
 long int Request::get_content_length() const
 {
 	std::unordered_map<std::string, std::string>::const_iterator got = headers.find("content-length");
-	if (got == headers.end()) {
+	if (got == headers.end())
+	{
 		return -1;
 	}
-	else {
+	else
+	{
 		return std::stol(got->second);
 	}
 }
 
-std::string Request::get_uri() const {
+std::string Request::get_uri() const
+{
 	return uri;
 }
 
-Http::Method Request::get_method() const {
+Http::Method Request::get_method() const
+{
 	return method;
 }
 
-size_t Request::set_request_line_attributes(const std::string& request_str)
+size_t Request::set_request_line_attributes(const std::string &request_str)
 {
 	size_t request_line_end_idx = request_str.find(CRLF);
-	
-	if (request_line_end_idx != std::string::npos) {
+
+	if (request_line_end_idx != std::string::npos)
+	{
 		std::string request_line = request_str.substr(0, request_line_end_idx);
 		size_t method_name_split = request_line.find(" ");
 		std::string method_string = request_line.substr(0, method_name_split);
@@ -118,11 +138,13 @@ size_t Request::set_request_line_attributes(const std::string& request_str)
 
 		query_params = {};
 
-		if (query_split != std::string::npos) {
+		if (query_split != std::string::npos)
+		{
 			size_t param_value_split;
 			size_t next_param_split;
 
-			do {
+			do
+			{
 				param_value_split = query_string.find("=");
 				std::string param_key = query_string.substr(0, param_value_split);
 				next_param_split = query_string.find("&");
@@ -136,16 +158,19 @@ size_t Request::set_request_line_attributes(const std::string& request_str)
 	return request_line_end_idx;
 }
 
-size_t Request::set_headers_from_request_str(const std::string& request) {
+size_t Request::set_headers_from_request_str(const std::string &request)
+{
 	headers = {};
 	// Delimits start of request body
 	size_t headers_end_index = request.find(CRLF + CRLF);
-	if (headers_end_index != std::string::npos) {
+	if (headers_end_index != std::string::npos)
+	{
 		std::istringstream headers_stream(request.substr(0, headers_end_index));
 
 		std::string line;
 
-		while (std::getline(headers_stream, line)) {
+		while (std::getline(headers_stream, line))
+		{
 			size_t header_name_value_split = line.find(":");
 
 			// Header name is case-insensitive
@@ -160,11 +185,13 @@ size_t Request::set_headers_from_request_str(const std::string& request) {
 	return headers_end_index;
 }
 
-std::string Request::get_body_as_str() const {
+std::string Request::get_body_as_str() const
+{
 	return body_str;
 }
 
-std::unordered_multimap<std::string, std::string> Request::get_query_params() const {
+std::unordered_multimap<std::string, std::string> Request::get_query_params() const
+{
 	return query_params;
 }
 
@@ -173,11 +200,12 @@ std::unordered_map<std::string, std::string> Request::get_path_params() const
 	return path_params;
 }
 
-void Request::set_path_params(const std::unordered_map<std::string, std::string>& new_path_params)
+void Request::set_path_params(const std::unordered_map<std::string, std::string> &new_path_params)
 {
 	path_params = new_path_params;
 }
 
-std::unordered_multimap<std::string, std::string> Request::get_headers() const {
+std::unordered_multimap<std::string, std::string> Request::get_headers() const
+{
 	return headers;
 }
