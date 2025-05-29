@@ -34,6 +34,49 @@ HttpServer::HttpServer(int new_port, int new_connection_queue_size, int new_buff
 	}
 }
 
+HttpServer::~HttpServer()
+{
+	if (server_fd != -1)
+		close(server_fd);
+
+	if (client_fd != -1)
+		close(client_fd);
+}
+
+HttpServer::HttpServer(HttpServer &&other) : buffer_size(other.buffer_size),
+																						 connection_queue_size(other.connection_queue_size),
+																						 port(other.port),
+																						 router(std::move(other.router)),
+																						 server_fd(other.server_fd),
+																						 client_fd(other.client_fd)
+{
+	other.server_fd = -1;
+	other.client_fd = -1;
+}
+
+HttpServer &HttpServer::operator=(HttpServer &&other) noexcept
+{
+	if (this != &other)
+	{
+		if (server_fd != -1)
+			close(server_fd);
+		if (client_fd != -1)
+			close(client_fd);
+
+		buffer_size = other.buffer_size;
+		connection_queue_size = other.connection_queue_size;
+		port = other.port;
+		router = std::move(other.router);
+
+		server_fd = other.server_fd;
+		client_fd = other.client_fd;
+
+		other.server_fd = -1;
+		other.client_fd = -1;
+	}
+	return *this;
+}
+
 void HttpServer::send_response(const Response &response) const
 {
 	std::string response_str = "HTTP/1.1 " + HttpStatus::get_status_line(response.status_code) + "\r\n";

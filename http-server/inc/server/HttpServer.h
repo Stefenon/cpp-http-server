@@ -22,27 +22,35 @@
 #include "request/Request.h"
 #include "exceptions/CustomExceptions.h"
 
-class HttpServer {
-	private:
-		int buffer_size;
-		int connection_queue_size;
-		int port;
-		HttpRouter router;
+class HttpServer
+{
+private:
+	int buffer_size;
+	int connection_queue_size;
+	int port;
+	HttpRouter router;
 
-		// Server socket variables
-		int server_fd;
-		sockaddr_in server_address;
+	// Server socket variables
+	int server_fd = -1;
+	sockaddr_in server_address;
 
-		// Client socket variables
-		int client_fd;
-		sockaddr_in client_address;
+	// Client socket variables
+	int client_fd = -1;
+	sockaddr_in client_address;
 
-		void send_response(const Response& response) const;
+	void send_response(const Response &response) const;
 
-	public:
-		HttpServer(int new_port=5000, int new_connection_queue_size=2, int new_buffer_size=200);
+public:
+	HttpServer(int new_port = 5000, int new_connection_queue_size = 2, int new_buffer_size = 200);
 
-		void start();
-		void set_router(HttpRouter router);
+	~HttpServer();
+	HttpServer(HttpServer &&other) noexcept;
+	HttpServer &operator=(HttpServer &&other) noexcept;
+
+	// HttpServer instances shouldn't be copied
+	HttpServer(const HttpServer &) = delete;
+	HttpServer &operator=(const HttpServer &) = delete;
+
+	void start();
+	void set_router(HttpRouter router);
 };
-
