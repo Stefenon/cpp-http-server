@@ -43,14 +43,14 @@ HttpServer::~HttpServer()
 		close(client_fd);
 }
 
-HttpServer::HttpServer(HttpServer &&other) : buffer_size(other.buffer_size),
-																						 connection_queue_size(other.connection_queue_size),
-																						 port(other.port),
-																						 router(std::move(other.router)),
-																						 server_fd(other.server_fd),
-																						 server_address(other.server_address),
-																						 client_fd(other.client_fd),
-																						 client_address(other.client_address)
+HttpServer::HttpServer(HttpServer &&other) noexcept : buffer_size(other.buffer_size),
+																											connection_queue_size(other.connection_queue_size),
+																											port(other.port),
+																											router(std::move(other.router)),
+																											server_fd(other.server_fd),
+																											server_address(other.server_address),
+																											client_fd(other.client_fd),
+																											client_address(other.client_address)
 {
 	other.server_fd = -1;
 	other.client_fd = -1;
