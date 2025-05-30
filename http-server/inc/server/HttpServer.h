@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sstream>
+#include <thread>
 
 #include "utils/StringFormatting.h"
 #include "router/HttpRouter.h"
@@ -34,11 +35,9 @@ private:
 	int server_fd = -1;
 	sockaddr_in server_address;
 
-	// Client socket variables
-	int client_fd = -1;
-	sockaddr_in client_address;
+	void send_response(const Response &response, const int &client_fd) const;
 
-	void send_response(const Response &response) const;
+	void handle_connection(const int client_fd);
 
 public:
 	HttpServer(int new_port = 5000, int new_connection_queue_size = 2, int new_buffer_size = 200);

@@ -4,11 +4,29 @@
 #include "inc/response/HtmlResponse.h"
 #include "inc/response/JsonResponse.h"
 
+#include <thread>
+#include <chrono>
+
 using namespace std;
 
 constexpr int PORT = 5000;
-constexpr int CONNECTION_QUEUE_SIZE = 2;
+constexpr int CONNECTION_QUEUE_SIZE = 100;
 constexpr int BUFFER_SIZE = 1024;
+
+static JsonResponse apply_delay(Request req)
+{
+	std::unordered_map<std::string, std::string> params = req.get_path_params();
+
+	int delay = std::stoi(params.at("delay"));
+
+	std::this_thread::sleep_for(std::chrono::seconds(delay));
+
+	nlohmann::json res_body;
+
+	res_body["delay"] = delay;
+
+	return JsonResponse(res_body, HttpStatusCode::HTTP_200_OK);
+}
 
 static HtmlResponse get_html(Request req)
 {
@@ -98,6 +116,7 @@ int main()
 {
 	cout << "Create HTTP router" << endl;
 	HttpRouter router;
+	router.get("/{delay}", apply_delay);
 	router.get("/html", get_html);
 	router.post("/json", post_json);
 	router.post("/json/{param_1}/{param_2}", post_json_with_params);
