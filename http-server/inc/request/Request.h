@@ -16,7 +16,6 @@
 
 class Request {
 	protected:
-		int fd;
 		std::string uri;
 		Http::Method method;
 		std::string body_str;

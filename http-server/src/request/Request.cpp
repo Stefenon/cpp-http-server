@@ -2,7 +2,6 @@
 
 Request::Request(int client_fd, int buffer_size)
 {
-	fd = client_fd;
 	std::vector<char> buffer(buffer_size);
 	std::string request_str;
 	request_str.reserve(buffer_size * 2);
