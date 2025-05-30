@@ -107,6 +107,11 @@ void HttpServer::handle_connection(const int client_fd)
 	{
 		send_response(Response(HttpStatusCode::HTTP_404_NOT_FOUND), client_fd);
 	}
+	catch (const MethodNotAllowedException &e)
+	{
+		nlohmann::json request_body = {{"detail", e.what()}};
+		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_405_METHOD_NOT_ALLOWED), client_fd);
+	}
 	catch (const std::exception &e)
 	{
 		std::cout << "std::exception caught: " << e.what() << std::endl;
