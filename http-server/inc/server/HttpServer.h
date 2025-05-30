@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <unordered_map>
 #include <unistd.h>
 #include <cerrno>
@@ -12,6 +13,7 @@
 #include <netinet/in.h>
 #include <sstream>
 #include <thread>
+#include <mutex>
 
 #include "utils/StringFormatting.h"
 #include "router/HttpRouter.h"
@@ -28,6 +30,11 @@ class HttpServer
 private:
 	int buffer_size;
 	int connection_queue_size;
+
+	std::queue<int> connection_queue;
+	std::vector<std::thread> thread_pool;
+	std::mutex queue_mutex;
+
 	int port;
 	HttpRouter router;
 
@@ -37,10 +44,12 @@ private:
 
 	void send_response(const Response &response, const int &client_fd) const;
 
+	void connection_thread();
+
 	void handle_connection(const int client_fd);
 
 public:
-	HttpServer(int new_port = 5000, int new_connection_queue_size = 2, int new_buffer_size = 200);
+	HttpServer(int new_port = 5000, int new_connection_queue_size = 100, int new_buffer_size = 200);
 
 	~HttpServer();
 	HttpServer(HttpServer &&other) noexcept;
