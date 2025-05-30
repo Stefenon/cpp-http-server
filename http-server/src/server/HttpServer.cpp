@@ -3,12 +3,18 @@
 void HttpServer::connection_thread()
 {
 	std::unique_lock<std::mutex> lock(queue_mutex);
-	if (!connection_queue.empty())
+	if (connection_queue.empty())
 	{
-		int client_fd = connection_queue.front();
-		connection_queue.pop();
-		lock.unlock();
+		cv.wait(lock, [this]
+						{ return !connection_queue.empty(); });
+	}
 
+	int client_fd = connection_queue.front();
+	connection_queue.pop();
+	lock.unlock();
+
+	if (client_fd != -1)
+	{
 		handle_connection(client_fd);
 	}
 }
@@ -172,7 +178,10 @@ void HttpServer::start()
 
 		if (client_fd != -1)
 		{
+			std::unique_lock lock(queue_mutex);
 			connection_queue.push(client_fd);
+			lock.unlock();
+			cv.notify_one();
 		}
 	}
 }

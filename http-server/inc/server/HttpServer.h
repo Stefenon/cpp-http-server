@@ -14,6 +14,7 @@
 #include <sstream>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #include "utils/StringFormatting.h"
 #include "router/HttpRouter.h"
@@ -34,6 +35,7 @@ private:
 	std::queue<int> connection_queue;
 	std::vector<std::thread> thread_pool;
 	std::mutex queue_mutex;
+	std::condition_variable cv;
 
 	int port;
 	HttpRouter router;
