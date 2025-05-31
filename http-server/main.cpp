@@ -1,11 +1,14 @@
 ﻿#include "inc/server/HttpServer.h"
-#include "inc/html/HtmlDocument.h"
 #include "inc/router/HttpRouter.h"
 #include "inc/response/HtmlResponse.h"
 #include "inc/response/JsonResponse.h"
+#include "inc/utils/HtmlUtils.h"
 
 #include <thread>
 #include <chrono>
+#include <filesystem>
+#include <unordered_map>
+#include <string>
 
 using namespace std;
 
@@ -30,28 +33,34 @@ static JsonResponse apply_delay(Request req)
 
 static HtmlResponse get_html(Request req)
 {
-	std::unordered_multimap<std::string, std::string> tags = req.get_query_params();
+	std::filesystem::path template_file = "templates/my_template.html";
+	std::unordered_map<std::string, std::string> context;
 
-	HtmlDocument doc = HtmlDocument();
-	doc.head.add_child_element(HtmlElement("title", "Title 123"));
-	doc.body.add_child_element(HtmlElement("h1", "Header 345", {{"class", "test"}}));
-
-	HtmlElement new_div = HtmlElement("div");
-	new_div.set_text("One more test");
-
-	for (const auto &query_param : tags)
+	for (const auto &[param_name, param_value] : req.get_query_params())
 	{
-		HtmlElement header_1 = HtmlElement("h1", query_param.first, {{"class", "header_1"}});
-		HtmlElement header_2 = HtmlElement("h2", query_param.second, {{"class", "header_2"}});
-		header_2.set_tail("Text after header");
-		header_2.set_attribute("new_attr", "abc");
-		new_div.add_child_element(header_1);
-		new_div.add_child_element(header_2);
+		context[param_name] = param_value;
 	}
 
-	doc.body.add_child_element(new_div);
+	if (auto it = context.find("page_title") == context.end())
+	{
+		context["page_title"] = "Generic Title";
+	}
+	if (auto it = context.find("header_text") == context.end())
+	{
+		context["header_text"] = "Generic Header";
+	}
+	if (auto it = context.find("paragraph_1") == context.end())
+	{
+		context["paragraph_1"] = "Generic Paragraph 1";
+	}
+	if (auto it = context.find("paragraph_2") == context.end())
+	{
+		context["paragraph_2"] = "Generic Paragraph 2";
+	}
 
-	return HtmlResponse(doc, HttpStatusCode::HTTP_202_ACCEPTED);
+	std::string html_string = Html::render(template_file, context);
+
+	return HtmlResponse(html_string, HttpStatusCode::HTTP_200_OK);
 }
 
 static JsonResponse post_json(Request req)
@@ -116,7 +125,7 @@ int main()
 {
 	cout << "Create HTTP router" << endl;
 	HttpRouter router;
-	router.get("/{delay}", apply_delay);
+	router.get("/delay/{delay}", apply_delay);
 	router.get("/html", get_html);
 	router.post("/json", post_json);
 	router.post("/json/{param_1}/{param_2}", post_json_with_params);
