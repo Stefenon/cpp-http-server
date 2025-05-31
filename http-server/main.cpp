@@ -65,11 +65,6 @@ static HtmlResponse get_html(Request req)
 
 static JsonResponse post_json(Request req)
 {
-	std::cout << "inside endpoint function" << std::endl;
-	for (const auto &[k, v] : req.get_path_params())
-	{
-		std::cout << k << "=" << v << std::endl;
-	}
 	nlohmann::json body;
 	const std::string json_str = req.get_body_as_str();
 

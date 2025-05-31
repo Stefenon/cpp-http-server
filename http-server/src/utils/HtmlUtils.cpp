@@ -28,7 +28,6 @@ std::string Html::render(std::filesystem::path html_template, std::unordered_map
     context_var_start += context_var_end;
 
     context_var_end = html_str.find("}}");
-    std::cout << context_var_start << ", " << context_var_end << std::endl;
     if (context_var_end == std::string::npos)
     {
       throw std::runtime_error("Malformed HTML template. Variable scope was never closed.");
