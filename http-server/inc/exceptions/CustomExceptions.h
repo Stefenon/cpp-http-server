@@ -30,3 +30,15 @@ class MethodNotAllowedException : public CustomException
 public:
 	MethodNotAllowedException(const std::string &new_message) : CustomException(new_message) {}
 };
+
+class PayloadTooLargeException : public CustomException
+{
+public:
+	PayloadTooLargeException(const std::string &new_message) : CustomException(new_message) {}
+};
+
+class RequestHeaderFieldsTooLargeException : public CustomException
+{
+public:
+	RequestHeaderFieldsTooLargeException(const std::string &new_message) : CustomException(new_message) {}
+};

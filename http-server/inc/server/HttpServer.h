@@ -24,12 +24,15 @@
 #include "json/json.hpp"
 #include "request/Request.h"
 #include "exceptions/CustomExceptions.h"
+#include "utils/FileSize.h"
 
 class HttpServer
 {
 private:
 	int buffer_size;
 	int connection_queue_size;
+	size_t max_body_size;
+	size_t max_headers_size;
 
 	std::queue<int> connection_queue;
 	std::vector<std::thread> thread_pool;
@@ -50,7 +53,12 @@ private:
 	void handle_connection(const int client_fd);
 
 public:
-	HttpServer(int new_port = 5000, int new_connection_queue_size = 100, int new_buffer_size = 200);
+	HttpServer(
+			int new_port = 5000,
+			int new_connection_queue_size = 100,
+			int new_buffer_size = 200,
+			size_t new_max_body_size = 10 * FileSize::MB,
+			size_t new_max_headers_size = 8 * FileSize::KB);
 
 	~HttpServer();
 	HttpServer(HttpServer &&other) noexcept;

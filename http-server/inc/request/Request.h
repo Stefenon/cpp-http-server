@@ -22,12 +22,16 @@ class Request {
 		std::unordered_multimap<std::string, std::string> query_params;
 		std::unordered_map<std::string, std::string> path_params;
 		std::unordered_multimap<std::string, std::string> headers;
-		long int get_content_length() const;
+
+		size_t max_body_size;
+		size_t max_header_size;
+
+		unsigned long long int get_content_length() const;
 		size_t set_request_line_attributes(const std::string& request_str);
 		size_t set_headers_from_request_str(const std::string& request);
 
 	public:
-		Request(int client_fd, int buffer_size);
+		Request(int client_fd, int buffer_size, size_t new_max_body_size, size_t new_max_header_size);
 		bool method_accepts_body() const;
 		std::string get_uri() const;
 		Http::Method get_method() const;

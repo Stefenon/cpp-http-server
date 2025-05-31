@@ -1,6 +1,7 @@
 #include "request/Request.h"
 
-Request::Request(int client_fd, int buffer_size)
+Request::Request(int client_fd, int buffer_size, size_t new_max_body_size, size_t new_max_header_size) : max_body_size(new_max_body_size),
+																																																				 max_header_size(new_max_header_size)
 {
 	std::vector<char> buffer(buffer_size);
 	std::string request_str;
@@ -34,13 +35,21 @@ Request::Request(int client_fd, int buffer_size)
 		if (headers.size() == 0)
 		{
 			size_t headers_end_index = set_headers_from_request_str(request_str);
+
 			if (headers_end_index != std::string::npos)
 			{
 				request_str.erase(0, headers_end_index + 4);
 
-				if (get_content_length() == -1)
+				unsigned long long int content_length = get_content_length();
+
+				if (content_length == -1)
 				{
 					break;
+				}
+
+				if (content_length > max_body_size)
+				{
+					throw PayloadTooLargeException("Request body size exceeds max body size accepted (" + std::to_string(max_body_size) + ").");
 				}
 			}
 		}
@@ -93,7 +102,7 @@ void Request::print_attributes() const
 	std::cout << "Body: " << body_str << std::endl;
 }
 
-long int Request::get_content_length() const
+unsigned long long int Request::get_content_length() const
 {
 	std::unordered_map<std::string, std::string>::const_iterator got = headers.find("content-length");
 	if (got == headers.end())
@@ -102,7 +111,7 @@ long int Request::get_content_length() const
 	}
 	else
 	{
-		return std::stol(got->second);
+		return std::stoull(got->second);
 	}
 }
 
@@ -162,9 +171,17 @@ size_t Request::set_headers_from_request_str(const std::string &request)
 	headers = {};
 	// Delimits start of request body
 	size_t headers_end_index = request.find(CRLF + CRLF);
+
 	if (headers_end_index != std::string::npos)
 	{
-		std::istringstream headers_stream(request.substr(0, headers_end_index));
+		std::string headers_str = request.substr(0, headers_end_index);
+
+		if (headers_str.size() > max_header_size)
+		{
+			throw RequestHeaderFieldsTooLargeException("Request headers exceed maximum header size accepted by server (" + std::to_string(max_header_size) + ").");
+		}
+
+		std::istringstream headers_stream(headers_str);
 
 		std::string line;
 

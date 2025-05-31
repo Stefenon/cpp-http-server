@@ -19,10 +19,18 @@ void HttpServer::connection_thread()
 	}
 }
 
-HttpServer::HttpServer(int new_port, int new_connection_queue_size, int new_buffer_size)
+HttpServer::HttpServer(
+		int new_port,
+		int new_connection_queue_size,
+		int new_buffer_size,
+		size_t new_max_body_size,
+		size_t new_max_headers_size) : port(new_port),
+																	 connection_queue_size(new_connection_queue_size),
+																	 buffer_size(new_buffer_size),
+																	 max_body_size(new_max_body_size),
+																	 max_headers_size(new_max_headers_size)
 {
-	connection_queue_size = new_connection_queue_size;
-	for (int i = 0; i < connection_queue_size; i++)
+	for (int i = 0; i < new_connection_queue_size; i++)
 	{
 		thread_pool.emplace_back(
 				[this]
@@ -31,9 +39,6 @@ HttpServer::HttpServer(int new_port, int new_connection_queue_size, int new_buff
 				connection_thread();
 			} });
 	}
-
-	port = new_port;
-	buffer_size = new_buffer_size;
 
 	// Create IPv4 socket
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -117,7 +122,7 @@ void HttpServer::handle_connection(const int client_fd)
 {
 	try
 	{
-		Request request(client_fd, buffer_size);
+		Request request(client_fd, buffer_size, max_body_size, max_headers_size);
 
 		Http::Method method = request.get_method();
 		std::string uri = request.get_uri();
@@ -140,6 +145,16 @@ void HttpServer::handle_connection(const int client_fd)
 	{
 		nlohmann::json request_body = {{"detail", e.what()}};
 		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_405_METHOD_NOT_ALLOWED), client_fd);
+	}
+	catch (const PayloadTooLargeException &e)
+	{
+		nlohmann::json request_body = {{"detail", e.what()}};
+		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_413_PAYLOAD_TOO_LARGE), client_fd);
+	}
+	catch (const RequestHeaderFieldsTooLargeException &e)
+	{
+		nlohmann::json request_body = {{"detail", e.what()}};
+		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_431_REQUEST_HEADER_FIELDS_TOO_LARGE), client_fd);
 	}
 	catch (const std::exception &e)
 	{
