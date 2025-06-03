@@ -46,7 +46,7 @@ private:
 	int server_fd = -1;
 	sockaddr_in server_address;
 
-	void send_response(const Response &response, const int &client_fd) const;
+	void send_response(Response &response, const int &client_fd) const;
 
 	void connection_thread();
 

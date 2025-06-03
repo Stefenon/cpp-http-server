@@ -12,7 +12,8 @@ Request::Request(int client_fd, int buffer_size, size_t new_max_body_size, size_
 	while (true)
 	{
 		n = recv(client_fd, buffer.data(), buffer.size() - 1, 0);
-		if (n <= 0)
+
+		if (n < 0)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 			{

@@ -1,5 +1,7 @@
 #include "server/HttpServer.h"
 
+constexpr int KEEP_ALIVE_TIMEOUT = 5;
+
 void HttpServer::connection_thread()
 {
 	std::unique_lock<std::mutex> lock(queue_mutex);
@@ -104,68 +106,119 @@ HttpServer &HttpServer::operator=(HttpServer &&other) noexcept
 	return *this;
 }
 
-void HttpServer::send_response(const Response &response, const int &client_fd) const
+void HttpServer::send_response(Response &response, const int &client_fd) const
 {
 	std::string response_str = "HTTP/1.1 " + HttpStatus::get_status_line(response.status_code) + "\r\n";
 	std::string content_str = response.content_to_string();
 
-	response_str += "Content-Type: " + response.content_type + "\r\n";
-	response_str += "Content-Length: " + std::to_string(content_str.length()) + "\r\n";
+	std::unordered_multimap<std::string, std::string> test;
+
+	response.set_header("content-type", response.content_type);
+	response.set_header("content-length", std::to_string(content_str.length()));
+
+	for (const auto &header : response.headers)
+	{
+		response_str += header.first + ": " + header.second + "\r\n";
+	}
 
 	response_str += "\r\n" + content_str;
 
 	write(client_fd, response_str.c_str(), response_str.length());
-	close(client_fd);
 }
 
 void HttpServer::handle_connection(const int client_fd)
 {
-	try
-	{
-		Request request(client_fd, buffer_size, max_body_size, max_headers_size);
+	bool keep_alive = true;
 
-		Http::Method method = request.get_method();
-		std::string uri = request.get_uri();
-		const auto [endpoint_function, path_params] = router.get_endpoint_function(method, uri);
-		request.set_path_params(path_params);
+	while (keep_alive)
+	{
+		try
+		{
+			Request request(client_fd, buffer_size, max_body_size, max_headers_size);
 
-		Response response = endpoint_function(request);
-		send_response(response, client_fd);
+			Http::Method method = request.get_method();
+			std::string uri = request.get_uri();
+			std::string http_version = request.get_http_version();
+			std::unordered_multimap<std::string, std::string> headers = request.get_headers();
+			std::string connection_header = "";
+
+			auto it = headers.find("connection");
+
+			if (it != headers.end())
+			{
+				connection_header = it->second;
+			}
+
+			if ((http_version == "HTTP/1.0" && connection_header != "keep-alive") || connection_header == "close")
+			{
+				keep_alive = false;
+			}
+
+			const auto [endpoint_function, path_params] = router.get_endpoint_function(method, uri);
+			request.set_path_params(path_params);
+
+			Response response = endpoint_function(request);
+			if (keep_alive)
+			{
+				response.set_header("connection", "keep-alive");
+				response.set_header("keep-alive", "timeout=" + std::to_string(KEEP_ALIVE_TIMEOUT));
+			}
+			else
+			{
+				response.set_header("connection", "close");
+			}
+
+			send_response(response, client_fd);
+		}
+		catch (const BadRequestException &e)
+		{
+			nlohmann::json request_body = {{"detail", e.what()}};
+			JsonResponse response(request_body, HttpStatusCode::HTTP_400_BAD_REQUEST);
+			send_response(response, client_fd);
+		}
+		catch (const EndpointNotFoundException &e)
+		{
+			Response response(HttpStatusCode::HTTP_404_NOT_FOUND);
+			send_response(response, client_fd);
+		}
+		catch (const MethodNotAllowedException &e)
+		{
+			nlohmann::json request_body = {{"detail", e.what()}};
+			JsonResponse response(request_body, HttpStatusCode::HTTP_405_METHOD_NOT_ALLOWED);
+			send_response(response, client_fd);
+		}
+		catch (const PayloadTooLargeException &e)
+		{
+			nlohmann::json request_body = {{"detail", e.what()}};
+			JsonResponse response(request_body, HttpStatusCode::HTTP_413_PAYLOAD_TOO_LARGE);
+			send_response(response, client_fd);
+		}
+		catch (const RequestHeaderFieldsTooLargeException &e)
+		{
+			nlohmann::json request_body = {{"detail", e.what()}};
+			JsonResponse response(request_body, HttpStatusCode::HTTP_431_REQUEST_HEADER_FIELDS_TOO_LARGE);
+			send_response(response, client_fd);
+		}
+		catch (const std::exception &e)
+		{
+			std::cout << "std::exception caught: " << e.what() << std::endl;
+			Response response(HttpStatusCode::HTTP_500_INTERNAL_SERVER_ERROR);
+			send_response(response, client_fd);
+		}
+		catch (...)
+		{
+			std::cout << "Unknown exception caught" << std::endl;
+			Response response(HttpStatusCode::HTTP_500_INTERNAL_SERVER_ERROR);
+			send_response(response, client_fd);
+		};
+
+		struct timeval tv;
+		tv.tv_sec = KEEP_ALIVE_TIMEOUT;
+		tv.tv_usec = 0;
+		setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	}
-	catch (const BadRequestException &e)
-	{
-		nlohmann::json request_body = {{"detail", e.what()}};
-		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_400_BAD_REQUEST), client_fd);
-	}
-	catch (const EndpointNotFoundException &e)
-	{
-		send_response(Response(HttpStatusCode::HTTP_404_NOT_FOUND), client_fd);
-	}
-	catch (const MethodNotAllowedException &e)
-	{
-		nlohmann::json request_body = {{"detail", e.what()}};
-		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_405_METHOD_NOT_ALLOWED), client_fd);
-	}
-	catch (const PayloadTooLargeException &e)
-	{
-		nlohmann::json request_body = {{"detail", e.what()}};
-		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_413_PAYLOAD_TOO_LARGE), client_fd);
-	}
-	catch (const RequestHeaderFieldsTooLargeException &e)
-	{
-		nlohmann::json request_body = {{"detail", e.what()}};
-		send_response(JsonResponse(request_body, HttpStatusCode::HTTP_431_REQUEST_HEADER_FIELDS_TOO_LARGE), client_fd);
-	}
-	catch (const std::exception &e)
-	{
-		std::cout << "std::exception caught: " << e.what() << std::endl;
-		send_response(Response(HttpStatusCode::HTTP_500_INTERNAL_SERVER_ERROR), client_fd);
-	}
-	catch (...)
-	{
-		std::cout << "Unknown exception caught" << std::endl;
-		send_response(Response(HttpStatusCode::HTTP_500_INTERNAL_SERVER_ERROR), client_fd);
-	};
+
+	close(client_fd);
 }
 
 void HttpServer::start()
