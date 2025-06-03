@@ -17,6 +17,7 @@
 class Request {
 	protected:
 		std::string uri;
+		std::string http_version;
 		Http::Method method;
 		std::string body_str;
 		std::unordered_multimap<std::string, std::string> query_params;
@@ -36,6 +37,7 @@ class Request {
 		std::string get_uri() const;
 		Http::Method get_method() const;
 		std::string get_body_as_str() const;
+		std::string get_http_version() const;
 		std::unordered_multimap<std::string, std::string> get_query_params() const;
 		std::unordered_map<std::string, std::string> get_path_params() const;
 		void set_path_params(const std::unordered_map<std::string, std::string>& new_path_params);

@@ -84,6 +84,8 @@ void Request::print_attributes() const
 
 	std::cout << "URI: " << uri << std::endl;
 
+	std::cout << "HTTP version: " << http_version << std::endl;
+
 	if (query_params.size() > 0)
 	{
 		std::cout << "Query params: " << std::endl;
@@ -140,6 +142,8 @@ size_t Request::set_request_line_attributes(const std::string &request_str)
 
 		size_t uri_split = request_line.find(" ");
 		std::string uri_string = request_line.substr(0, uri_split);
+		http_version = request_line.substr(uri_split + 1);
+
 		size_t query_split = uri_string.find("?");
 		std::string query_string = uri_string.substr(query_split + 1);
 		uri = uri_string.substr(0, query_split);
@@ -206,6 +210,10 @@ std::string Request::get_body_as_str() const
 	return body_str;
 }
 
+std::string Request::get_http_version() const
+{
+	return http_version;
+}
 std::unordered_multimap<std::string, std::string> Request::get_query_params() const
 {
 	return query_params;
